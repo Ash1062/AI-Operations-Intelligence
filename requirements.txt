@@ -3,3 +3,5 @@ numpy
 matplotlib
 jupyter
 google-play-scraper
+openai
+python-dotenv
