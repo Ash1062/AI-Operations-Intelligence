@@ -13,62 +13,63 @@ client = OpenAI(
 # Intelligence Engine
 # ------------------------------
 def generate_operational_intelligence(issue_category, reviews):
-    """
-    Generate AI-powered operational intelligence for a single issue category.
-    """
-    review_text = "\n".join(reviews.tolist())
 
-    prompt = f"""
-You are a senior Operations Intelligence Consultant.
-
-You have received customer reviews already classified into the issue category:
-
-{issue_category}
-
-Analyze ONLY these reviews.
-
-Your task:
-
-1. Identify recurring operational themes.
-2. Estimate frequency of each theme.
-3. Identify probable operational root causes.
-4. Explain business impact.
-5. Recommend executive actions.
-6. Assign priority:
-   High
-   Medium
-   Low
-
-Return ONLY valid JSON.
-
-Format:
-
-{{
- "issue_category":"",
-
- "themes":[
-   {{
-      "theme":"",
-      "frequency":"",
-      "root_cause":"",
-      "business_impact":"",
-      "recommendation":"",
-      "priority":""
-   }}
- ]
-}}
-
-Reviews:
-
-{review_text}
-
-"""
-    response = client.responses.create(
-        model="gpt-5.5",
-        input=prompt
+    review_text = "\n".join(
+        f"- {review}" for review in reviews
     )
 
-    return response.output_text
+    prompt = f"""
+You are an Operations Intelligence Analyst.
+
+The following customer reviews have ALREADY been classified into the issue category:
+
+Issue Category: {issue_category}
+
+Reviews:
+{review_text}
+
+Your job is to identify recurring operational problems and generate executive-level intelligence.
+
+Return ONLY valid JSON in the following format:
+
+{{
+  "issue_category": "{issue_category}",
+  "themes": [
+    {{
+      "theme": "...",
+      "frequency": "...",
+      "root_cause": "...",
+      "business_impact": "...",
+      "recommendation": "...",
+      "priority": "High"
+    }}
+  ]
+}}
+
+Rules:
+- Identify the TOP 3–5 DISTINCT recurring themes.
+- Do NOT merge unrelated problems into one theme.
+- Sort themes from highest to lowest frequency.
+- Every theme must include frequency, root_cause, business_impact, recommendation, and priority.
+- Priority must be High, Medium, or Low.
+- Return ONLY JSON. No markdown or explanation.
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-5-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an expert business operations analyst."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    return response.choices[0].message.content
 
 def generate_all_intelligence(df):
     """
